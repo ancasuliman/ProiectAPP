@@ -6,8 +6,6 @@
 
 int num_threads;
 int resize_factor;
-/* Declar si initializez matricea care contine valorile Kernel-ului Gaussian */
-unsigned char gaussianKernel[3][3] = {{1, 2, 1}, {2, 4, 2}, {1, 2, 1}};
 
 /* Functie care imi aloca o matrice cu elemente de tip pixel */
 pixel **allocation_color(int height, int width) {
@@ -139,7 +137,6 @@ void writeData(const char *fileName, image *img) {
     fclose(file_out);
 }
 
-/* Functie pentru resize_factor par */
 void *threadFunction (void *var) {
 
     thread_struct thread = *(thread_struct*) var;
@@ -220,15 +217,12 @@ void resize(image *in, image *out) {
         thread[i].out = out;
     }
 
-    /* resize_factor par */
-    if (resize_factor % 2 == 0) {
-        in -> height -= in -> height % resize_factor;
-        in -> width -= in -> width % resize_factor;
+    in -> height -= in -> height % resize_factor;
+    in -> width -= in -> width % resize_factor;
 
-        for (i = 0; i < num_threads; i++) {
-            pthread_create(&(tid[i]), NULL, threadFunction, &(thread[i]));
-        }
-    } 
+    for (i = 0; i < num_threads; i++) {
+        pthread_create(&(tid[i]), NULL, threadFunction, &(thread[i]));
+    }
 
     for (i = 0; i < num_threads; i++) {
         pthread_join(tid[i], NULL);
