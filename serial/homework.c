@@ -4,8 +4,6 @@
 #include <math.h>
 
 int resize_factor;
-/* Declar si initializez matricea care contine valorile Kernel-ului Gaussian */
-unsigned char gaussianKernel[3][3] = {{1, 2, 1}, {2, 4, 2}, {1, 2, 1}};
 
 /* Functie care imi aloca o matrice cu elemente de tip pixel */
 pixel **allocation_color(int height, int width) {
@@ -137,10 +135,26 @@ void writeData(const char *fileName, image *img) {
     fclose(file_out);
 }
 
-/* Functie pentru resize_factor par */
-void resize_function (image *in, image *out) {
+void resize(image *in, image *out) { 
 
     int i, j, k, l, sum, sum_r, sum_g, sum_b;    
+
+    /* Retin header-ul imaginii */
+    out -> P = in -> P;
+    out -> height = in -> height / resize_factor;
+    out -> width = in -> width / resize_factor;
+    out -> maxVal = in -> maxVal;
+
+    /* Aloc memorie */
+    if (in -> P == '5') {
+        out -> bw = allocation_bw (out -> height, out -> width);
+    }
+    else if (in -> P == '6') {
+        out -> color = allocation_color (out -> height, out -> width);        
+    }
+
+    in -> height -= in -> height % resize_factor;
+    in -> width -= in -> width % resize_factor;
 
     /* Daca imaginea este grayscale */
     if (in -> P == '5') {
@@ -180,29 +194,4 @@ void resize_function (image *in, image *out) {
             }
         }
     }
-}
-
-void resize(image *in, image *out) { 
-
-    /* Retin header-ul imaginii */
-    out -> P = in -> P;
-    out -> height = in -> height / resize_factor;
-    out -> width = in -> width / resize_factor;
-    out -> maxVal = in -> maxVal;
-
-    /* Aloc memorie */
-    if (in -> P == '5') {
-        out -> bw = allocation_bw (out -> height, out -> width);
-    }
-    else if (in -> P == '6') {
-        out -> color = allocation_color (out -> height, out -> width);        
-    }
-
-    /* resize_factor par */
-    if (resize_factor % 2 == 0) {
-        in -> height -= in -> height % resize_factor;
-        in -> width -= in -> width % resize_factor;
-
-        resize_function(in, out);
-    } 
 }
