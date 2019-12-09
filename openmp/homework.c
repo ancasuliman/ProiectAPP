@@ -4,8 +4,8 @@
 #include <math.h>
 #include <omp.h>
 
+int num_threads;
 int resize_factor;
-#define NUM_THREADS     16
 
 /* Functie care imi aloca o matrice cu elemente de tip pixel */
 pixel **allocation_color(int height, int width) {
@@ -137,66 +137,9 @@ void writeData(const char *fileName, image *img) {
     fclose(file_out);
 }
 
-/* Functie pentru resize_factor par */
-void resize_function (image *in, image *out) {
-
-    int i, j, k, l, sum, sum_r, sum_g, sum_b;    
-
-    omp_set_num_threads(NUM_THREADS);
-
-    /* Daca imaginea este grayscale */
-    if (in -> P == '5') {
-        int intervalSize = ceil ((float) (in -> height / NUM_THREADS));
-
-        #pragma omp parallel
-        {
-            #pragma omp for schedule(dynamic, intervalSize)
-            for (i = 0; i < in -> height; i = i + resize_factor) {
-                for (j = 0; j < in -> width; j = j + resize_factor) {
-                    sum = 0;
-                    for (k = i; k < i + resize_factor; k++) {
-                        for (l = j; l < j + resize_factor; l++) {
-                            sum += in -> bw[k][l];
-                        }
-                    }
-                    out -> bw[i / resize_factor][j / resize_factor] = 
-                                                    sum / pow(resize_factor, 2);
-                }
-            }
-        }
-    }
-    /* Daca imaginea este color */
-    else if (in -> P == '6') {
-        int intervalSize = ceil ((float) (in -> height / NUM_THREADS)); 
-        
-        #pragma omp parallel
-        {
-            #pragma omp for schedule(dynamic, intervalSize)
-            for (i = 0; i < in -> height; i = i + resize_factor) {
-                for (j = 0; j < in -> width; j = j + resize_factor) {
-                    sum_r = 0;
-                    sum_g = 0;
-                    sum_b = 0;
-                    for (k = i; k < i + resize_factor; k++) {
-                        for (l = j; l < j + resize_factor; l++) {
-                            sum_r += in -> color[k][l].r;
-                            sum_g += in -> color[k][l].g;
-                            sum_b += in -> color[k][l].b;                        
-                        }
-                    }
-                    out -> color[i / resize_factor][j / resize_factor].r = 
-                                                    sum_r / pow(resize_factor, 2);
-                    out -> color[i / resize_factor][j / resize_factor].g = 
-                                                    sum_g / pow(resize_factor, 2);
-                    out -> color[i / resize_factor][j / resize_factor].b = 
-                                                    sum_b / pow(resize_factor, 2);
-                }
-            }
-        }
-    }
-}
-
 void resize(image *in, image *out) { 
+
+    int i, j, k, l, sum, sum_r, sum_g, sum_b, intervalSize;
 
     /* Retin header-ul imaginii */
     out -> P = in -> P;
@@ -215,8 +158,50 @@ void resize(image *in, image *out) {
     in -> height -= in -> height % resize_factor;
     in -> width -= in -> width % resize_factor;
 
-    resize_function(in, out);
+    omp_set_num_threads(num_threads);
 
-    in -> height = in -> height / resize_factor;
-    in -> width = in -> width / resize_factor;
+    /* Daca imaginea este grayscale */
+    if (in -> P == '5') {
+        intervalSize = ceil ((float) (in -> height / num_threads));
+
+        #pragma omp parallel for schedule(dynamic, intervalSize)
+        for (i = 0; i < in -> height; i = i + resize_factor) {
+            for (j = 0; j < in -> width; j = j + resize_factor) {
+                sum = 0;
+                for (k = i; k < i + resize_factor; k++) {
+                    for (l = j; l < j + resize_factor; l++) {
+                        sum += in -> bw[k][l];
+                    }
+                }
+                out -> bw[i / resize_factor][j / resize_factor] = 
+                                                sum / pow(resize_factor, 2);
+            }
+        }
+    }
+    /* Daca imaginea este color */
+    else if (in -> P == '6') {
+        intervalSize = ceil ((float) (in -> height / num_threads));
+
+        #pragma omp parallel for schedule(dynamic, intervalSize)
+        for (i = 0; i < in -> height; i = i + resize_factor) {
+            for (j = 0; j < in -> width; j = j + resize_factor) {
+                sum_r = 0;
+                sum_g = 0;
+                sum_b = 0;
+                for (k = i; k < i + resize_factor; k++) {
+                    for (l = j; l < j + resize_factor; l++) {
+                        sum_r += in -> color[k][l].r;
+                        sum_g += in -> color[k][l].g;
+                        sum_b += in -> color[k][l].b;                        
+                    }
+                }
+                out -> color[i / resize_factor][j / resize_factor].r = 
+                                                sum_r / pow(resize_factor, 2);
+                out -> color[i / resize_factor][j / resize_factor].g = 
+                                                sum_g / pow(resize_factor, 2);
+                out -> color[i / resize_factor][j / resize_factor].b = 
+                                                sum_b / pow(resize_factor, 2);
+            }
+        }
+    }
 }
