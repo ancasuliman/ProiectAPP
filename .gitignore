@@ -1,2 +1,5 @@
 in/*
 out/*
+test_scripts/*
+pthreads/profiling/*
+serial/profiling/*
